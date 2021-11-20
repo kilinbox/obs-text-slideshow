@@ -27,8 +27,8 @@ jobs:
 
       - name: 'Run clang-format'
         run: |
-          ./CI/formatcode.sh
-          ./CI/check-format.sh
+          ./CI/utility/formatcode.sh
+          ./CI/utility/check-format.sh
 
   macos_build:
     name: '02 - macOS (Latest)'
@@ -97,7 +97,7 @@ jobs:
           fi
 
       - name: 'Install dependencies'
-        run: CI/macos/01_install_dependencies.sh --architecture "${{ matrix.arch }}"
+        run: ./CI/macos/01_install_dependencies.sh --architecture "${{ matrix.arch }}"
 
       - name: 'Restore libobs and obs-frontend-api from cache'
         id: libobs-cache
@@ -115,7 +115,7 @@ jobs:
       - name: 'Build libobs and obs-frontend-api'
         if: steps.libobs-cache.outputs.cache-hit != 'true'
         working-directory: 'plugin'
-        run: CI/macos/02_build_obs-libs.sh --architecture "${{ matrix.arch }}"
+        run: ./CI/macos/02_build_obs-libs.sh --architecture "${{ matrix.arch }}"
 
       - name: 'Install Apple Developer Certificate'
         if: startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request' && env.HAVE_CODESIGN_IDENTITY == 'true'
@@ -132,12 +132,12 @@ jobs:
 
       - name: 'Build plugin'
         working-directory: 'plugin'
-        run: CI/macos/03_build_plugin.sh --codesign --architecture "${{ matrix.arch }}"
+        run: ./CI/macos/03_build_plugin.sh --codesign --architecture "${{ matrix.arch }}"
 
       - name: 'Create build artifact'
         if: success() && (github.event_name != 'pull_request' || env.SEEKING_TESTERS == '1')
         working-directory: 'plugin'
-        run: CI/macos/04_package_plugin.sh --codesign --architecture "${{ matrix.arch }}"
+        run: ./CI/macos/04_package_plugin.sh --codesign --architecture "${{ matrix.arch }}"
 
       - name: 'Upload build Artifact'
         if: success() && (github.event_name != 'pull_request' || env.SEEKING_TESTERS == '1')
@@ -195,7 +195,7 @@ jobs:
 
       - name: "Install Dependencies"
         working-directory: 'plugin'
-        run: CI/linux/01_install_dependencies.sh --disable-pipewire
+        run: ./CI/linux/01_install_dependencies.sh --disable-pipewire
 
       - name: 'Restore libobs and obs-frontend-api from cache'
         id: libobs-cache
@@ -213,16 +213,16 @@ jobs:
       - name: 'Build libobs and obs-frontend-api'
         if: steps.libobs-cache.outputs.cache-hit != 'true'
         working-directory: 'plugin'
-        run: CI/linux/02_build_obs-libs.sh --disable-pipewire
+        run: ./CI/linux/02_build_obs-libs.sh --disable-pipewire
 
       - name: 'Build plugin'
         working-directory: 'plugin'
-        run: CI/linux/03_build_plugin.sh
+        run: ./CI/linux/03_build_plugin.sh
 
       - name: 'Create build artifact'
         working-directory: 'plugin'
         if: success() && (github.event_name != 'pull_request' || env.SEEKING_TESTERS == '1')
-        run: CI/linux/04_package_plugin.sh
+        run: ./CI/linux/04_package_plugin.sh
 
       - name: 'Upload build Artifact'
         if: success() && (github.event_name != 'pull_request' || env.SEEKING_TESTERS == '1')
@@ -269,7 +269,7 @@ jobs:
 
       - name: "Install Dependencies"
         working-directory: 'plugin'
-        run: CI/windows/01_install_dependencies.ps1 -BuildArch ${{ matrix.arch }}-bit -NoChoco
+        run: ./CI/windows/01_install_dependencies.ps1 -BuildArch ${{ matrix.arch }}-bit -NoChoco
 
       - name: 'Restore libobs and obs-frontend-api from cache'
         id: libobs-cache
@@ -285,15 +285,15 @@ jobs:
 
       - name: 'Build libobs and obs-frontend-api'
         working-directory: 'obs-studio'
-        run: CI/windows/02_build_obs_libs.ps1 -BuildArch "${{ matrix.arch }}-bit"
+        run: ./CI/windows/02_build_obs_libs.ps1 -BuildArch "${{ matrix.arch }}-bit"
 
       - name: 'Build plugin'
         working-directory: 'plugin'
-        run: CI/windows/03_build_plugin.ps1 -BuildArch "${{ matrix.arch }}-bit"
+        run: ./CI/windows/03_build_plugin.ps1 -BuildArch "${{ matrix.arch }}-bit"
 
       - name: 'Create build artifact'
         if: success() && (github.event_name != 'pull_request' || env.SEEKING_TESTERS == '1')
-        run: CI/windows/04_package_plugin.ps1 -BuildArch "${{ matrix.arch }}-bit"
+        run: ./CI/windows/04_package_plugin.ps1 -BuildArch "${{ matrix.arch }}-bit"
 
       - name: 'Upload build Artifact'
         if: success() && (github.event_name != 'pull_request' || env.SEEKING_TESTERS == '1')
@@ -329,7 +329,7 @@ jobs:
         run: |
           Get-ChildItem -Filter "*-Win32.zip" -File | Expand-Archive -DestinationPath ./release/
           Get-ChildItem -Filter "*-Win64.zip" -File | Expand-Archive -DestinationPath ./release/
-          CI/windows/04_package_plugin.ps1 -BuildInstaller -CombinedArchs
+          ./CI/windows/04_package_plugin.ps1 -BuildInstaller -CombinedArchs
 
       - name: 'Upload build Artifact'
         if: success() && (github.event_name != 'pull_request' || env.SEEKING_TESTERS == '1')
@@ -370,14 +370,14 @@ jobs:
 
       - name: 'Install prerequisite XCNotary'
         if: env.HAVE_CODESIGN_IDENTITY == 'true'
-        run: brew bundle --file CI/include/Xcnotary
+        run: brew bundle --file ./CI/include/Xcnotary
 
       - name: 'Create disk image for distribution'
         if: env.HAVE_CODESIGN_IDENTITY == 'true'
         env:
           CODESIGN_IDENT_USER: '${{ secrets.MACOS_NOTARIZATION_USERNAME }}'
           CODESIGN_IDENT_PASS: '${{ secrets.MACOS_NOTARIZATION_PASSWORD }}'
-        run: CI/macos/04_package_plugin.sh --notarize
+        run: ./CI/macos/04_package_plugin.sh --notarize
 
       - name: 'Upload notarized installer package'
         if: env.HAVE_CODESIGN_IDENTITY == 'true'
