@@ -16,16 +16,19 @@ static void remove_starting_new_line(char **text_ptr)
 	}
 }
 
-static void remove_ending_new_line(char *text)
+static bool remove_ending_new_line(char *text)
 {
 	size_t len = strlen(text);
 
 	if (len >= 2 && text[len - 2] == '\r' && text[len - 1] == '\n') {
 		text[len - 2] = 0;
 		text[len - 1] = 0;
+		return true;
 	} else if (len >= 1 && text[len - 1] == '\n') {
 		text[len - 1] = 0;
+		return true;
 	}
+	return false;
 }
 
 static void remove_new_lines(size_t start, vector<char *> &texts)
@@ -60,6 +63,8 @@ static void load_text_from_file(vector<char *> &texts, const char *file_path,
 	memset(chunk, 0, CHUNK_LEN);
 	bool add_new_line = true;
 	size_t read = 0;
+	bool removed_prev_end_nl = false;
+	bool removed_end_nl = false;
 
 	while ((read = fread(chunk, sizeof(char), CHUNK_LEN - 1, file))) {
 
@@ -76,11 +81,12 @@ static void load_text_from_file(vector<char *> &texts, const char *file_path,
 
 		while (token) {
 
-			remove_starting_new_line(&token);
-			remove_ending_new_line(token);
+			removed_end_nl = remove_ending_new_line(token);
 			size_t token_len = strlen(token);
 
 			if (add_new_line) {
+				remove_starting_new_line(&token);
+
 				// Need to add new string
 				char *curr_text =
 					(char *)bzalloc(token_len + 1);
@@ -102,9 +108,19 @@ static void load_text_from_file(vector<char *> &texts, const char *file_path,
 				// Need to append to existing string
 				size_t curr_index = texts.size() - 1;
 				size_t existing_len = strlen(texts[curr_index]);
+
+#ifdef _WIN32
+				unsigned int new_line_len =
+					removed_prev_end_nl ? 2 : 0;
+#else
+				unsigned int new_line_len =
+					removed_prev_end_nl ? 1 : 0;
+#endif
+
 				char *new_ptr = (char *)brealloc(
 					(void *)texts[curr_index],
-					existing_len + token_len + 1);
+					new_line_len + existing_len +
+						token_len + 1);
 
 				if (new_ptr == NULL) {
 					fclose(file);
@@ -112,11 +128,20 @@ static void load_text_from_file(vector<char *> &texts, const char *file_path,
 				}
 
 #ifdef _WIN32
-				strncpy_s(new_ptr + existing_len, token_len + 1,
-					  token, token_len);
+				if (removed_prev_end_nl) {
+					new_ptr[existing_len] = '\r';
+					new_ptr[existing_len + 1] = '\n';
+				}
+
+				strncpy_s(new_ptr + existing_len + new_line_len,
+					  token_len + 1, token, token_len);
 #else
-				strncpy(new_ptr + existing_len, token,
-					token_len);
+				if (removed_prev_end_nl) {
+					new_ptr[existing_len] = '\n';
+				}
+
+				strncpy(new_ptr + existing_len + new_line_len,
+					token, token_len);
 #endif
 
 				new_ptr[existing_len + token_len] = 0;
@@ -132,6 +157,7 @@ static void load_text_from_file(vector<char *> &texts, const char *file_path,
 #endif
 		}
 
+		removed_prev_end_nl = removed_end_nl;
 		add_new_line = end_in_delim;
 	}
 
