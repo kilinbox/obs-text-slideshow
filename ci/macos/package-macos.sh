@@ -20,11 +20,11 @@ FILENAME="$PLUGIN_NAME-$PLUGIN_VERSION.pkg"
 
 echo "=> Modifying $PLUGIN_NAME.so"
 install_name_tool \
-	-change /tmp/obsdeps/lib/QtWidgets.framework/Versions/5/QtWidgets \
+	-change ~/obsdeps/lib/QtWidgets.framework/Versions/5/QtWidgets \
 		@executable_path/../Frameworks/QtWidgets.framework/Versions/5/QtWidgets \
-	-change /tmp/obsdeps/lib/QtGui.framework/Versions/5/QtGui \
+	-change ~/obsdeps/lib/QtGui.framework/Versions/5/QtGui \
 		@executable_path/../Frameworks/QtGui.framework/Versions/5/QtGui \
-	-change /tmp/obsdeps/lib/QtCore.framework/Versions/5/QtCore \
+	-change ~/obsdeps/lib/QtCore.framework/Versions/5/QtCore \
 		@executable_path/../Frameworks/QtCore.framework/Versions/5/QtCore \
 	./build/$PLUGIN_NAME.so
 

@@ -22,10 +22,10 @@ fi
 
 echo "=> Downloading and unpacking OBS dependencies"
 wget --quiet --retry-connrefused --waitretry=1 https://github.com/obsproject/obs-deps/releases/download/2021-03-25/macos-deps-x86_64-2021-03-25.tar.gz
-tar -xf ./macos-deps-x86_64-2021-03-25.tar.gz -C /tmp
+tar -xf ./macos-deps-x86_64-2021-03-25.tar.gz -C ~/
 wget --quiet --retry-connrefused --waitretry=1 https://github.com/obsproject/obs-deps/releases/download/2021-03-25/macos-qt-5.15.2-x86_64-2021-03-25.tar.gz
-tar -xf ./macos-qt-5.15.2-x86_64-2021-03-25.tar.gz -C /tmp
-xattr -r -d com.apple.quarantine /tmp/obsdeps
+tar -xf ./macos-qt-5.15.2-x86_64-2021-03-25.tar.gz -C ~/
+xattr -r -d com.apple.quarantine ~/obsdeps
 
 # Build obs-studio
 cd ..
@@ -36,5 +36,5 @@ OBSLatestTag=$(git describe --tags --abbrev=0)
 git checkout $OBSLatestTag
 mkdir build && cd build
 echo "=> Building obs-studio.."
-cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DDISABLE_PLUGINS=true -DENABLE_SCRIPTING=0 -DDepsPath="/tmp/obsdeps" -DQTDIR="/tmp/obsdeps" ..
+cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DDISABLE_PLUGINS=true -DENABLE_SCRIPTING=0 -DDepsPath="~/obsdeps" -DQTDIR="~/obsdeps" ..
 make -j4
