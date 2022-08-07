@@ -26,73 +26,51 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (WIN32 OR APPLE)
-include(external/FindLibObs.cmake)
-endif()
+#if (WIN32 OR APPLE)
+#include(external/FindLibObs.cmake)
+#endif()
 
-find_package(LibObs REQUIRED)
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+#find_package(LibObs REQUIRED)
+#find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+find_qt(COMPONENTS Core Widgets)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-configure_file(
-    src/plugin-macros.h.in
-    ../src/plugin-macros.generated.h
-)
-configure_file(
-    installer/installer-macOS.pkgproj.in
-    ../installer/installer-macOS.generated.pkgproj
-)
-configure_file(
-    installer/installer-Windows.iss.in
-    ../installer/installer-Windows.generated.iss
-)
 
-configure_file(
-    ci/ci_includes.sh.in
-    ../ci/ci_includes.generated.sh
-)
-configure_file(
-    ci/ci_includes.cmd.in
-    ../ci/ci_includes.generated.cmd
-)
+# Setup target
+add_library(obs-text-slideshow MODULE)
+add_library(OBS::obs-text-slideshow ALIAS obs-text-slideshow)
 
-set(PLUGIN_SOURCES
+target_sources(
+  obs-text-slideshow
+  PRIVATE 
 	src/plugin-main.cpp
     src/obs-text-freetype2-slideshow.cpp
     src/obs-text-slideshow.cpp
     src/obs-text-slideshow-dock.cpp
-    src/files.cpp)
-
-if(WIN32)
-    set(PLUGIN_SOURCES 
-        ${PLUGIN_SOURCES} 
-        src/obs-text-gdiplus-slideshow.cpp)
-endif()
-
-set(PLUGIN_HEADERS
+    src/files.cpp
 	src/plugin-macros.generated.h
     src/obs-text-slideshow.h
     src/obs-text-slideshow-dock.h
     src/files.h)
 
-qt5_wrap_ui(PLUGIN_UI_HEADERS src/obs-text-slideshow-dock.ui)
+qt_wrap_ui(PLUGIN_UI_HEADERS src/obs-text-slideshow-dock.ui)
 
 # --- Platform-independent build settings ---
-add_library(${CMAKE_PROJECT_NAME} MODULE ${PLUGIN_SOURCES} ${PLUGIN_HEADERS} ${PLUGIN_UI_HEADERS})
+# add_library(${CMAKE_PROJECT_NAME} MODULE ${PLUGIN_SOURCES} ${PLUGIN_HEADERS} ${PLUGIN_UI_HEADERS})
 
 include_directories(
-	"${LIBOBS_INCLUDE_DIR}/../UI/obs-frontend-api"
 	${Qt5Core_INCLUDES}
 	${Qt5Widgets_INCLUDES}
 )
 
-target_link_libraries(${CMAKE_PROJECT_NAME}
-	libobs
-	Qt5::Core
-	Qt5::Widgets
+target_link_libraries(obs-text-slideshow
+	OBS::libobs
+    OBS::frontend-api
+	Qt::Core
+	Qt::Widgets
 )
 
 # --- End of section ---
@@ -232,8 +210,10 @@ endif()
 # -- OS X specific build settings and tasks --
 if(APPLE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -fvisibility=default")
-
-	set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES PREFIX "")
-	target_link_libraries(${CMAKE_PROJECT_NAME} "${OBS_FRONTEND_LIB}")
+	set_target_properties(obs-text-slideshow PROPERTIES FOLDER "plugins/obs-text-slideshow")
 endif()
 # -- End of section --
+
+# Final CMake helpers
+setup_plugin_target(obs-text-slideshow)
+setup_target_resources(obs-text-slideshow "obs-plugins/obs-text-slideshow")
